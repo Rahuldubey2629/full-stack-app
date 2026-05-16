@@ -37,10 +37,7 @@ stages:
           - task: CopyFiles@2
             inputs:
               sourceFolder: '$(Build.SourcesDirectory)'
-              contents: |
-                requirements.txt
-                Procfile
-                backend/**
+              contents: '**'
               targetFolder: '$(Build.ArtifactStagingDirectory)'
             displayName: 'Copy Files to Staging'
 
