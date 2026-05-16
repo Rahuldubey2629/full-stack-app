@@ -93,8 +93,8 @@ stages:
 
                 - task: AzureWebApp@1
                   inputs:
-                    azureSubscription: '$(azureSubscription)'
+                    azureSubscription: 'azure-connection'
                     appType: 'webAppLinux'
-                    appName: '$(appName)'
+                    appName: 'azure-learning-lab'
                     package: '$(Pipeline.Workspace)/drop'
                   displayName: 'Deploy to Azure App Service'
