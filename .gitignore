@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+.DS_Store
+.vscode
+__pycache__
+*.pyc
+.venv
+db.sqlite3
+staticfiles

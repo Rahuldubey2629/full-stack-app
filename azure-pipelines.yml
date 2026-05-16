@@ -1,0 +1,80 @@
+trigger:
+- main
+
+variables:
+  pythonVersion: '3.12'
+  azureServiceConnection: 'replace-with-your-service-connection'
+  webAppName: 'replace-with-your-app-service-name'
+
+stages:
+- stage: Build
+  displayName: Build and validate
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+
+    - task: UsePythonVersion@0
+      displayName: Use Python $(pythonVersion)
+      inputs:
+        versionSpec: '$(pythonVersion)'
+
+    - script: python -m pip install --upgrade pip
+      displayName: Upgrade pip
+
+    - script: pip install -r requirements.txt
+      displayName: Install dependencies
+
+    - script: python backend/manage.py check
+      displayName: Django system check
+
+    - script: python backend/manage.py collectstatic --noinput
+      displayName: Collect static assets
+
+    - task: CopyFiles@2
+      displayName: Stage deployment files
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: |
+          backend/**
+          requirements.txt
+          Procfile
+          README.md
+          docs/**
+          .gitignore
+          .env.example
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/drop'
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish artifact
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/drop'
+        ArtifactName: drop
+
+- stage: Deploy
+  displayName: Deploy to App Service
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: DeployApp
+    displayName: Deploy application
+    environment: learn-azure
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+
+          - task: AzureWebApp@1
+            displayName: Deploy to Azure Web App
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              appType: webAppLinux
+              appName: '$(webAppName)'
+              package: '$(Pipeline.Workspace)/drop'
