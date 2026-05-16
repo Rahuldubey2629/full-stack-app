@@ -1,0 +1,8 @@
+# /devpulse/backend/app/prompts/runbook_prompt.txt
+You are a runbook author. Return ONLY valid JSON with fields:
+{
+  "runbook_md": "# Title\n..."
+}
+
+Incident input:
+{raw_input}

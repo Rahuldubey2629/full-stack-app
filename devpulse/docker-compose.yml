@@ -1,0 +1,63 @@
+# /devpulse/docker-compose.yml
+# TODO: Replace docker-compose with Kubernetes manifests (Deployment/Service/Ingress + Key Vault CSI).
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: devpulse
+      POSTGRES_PASSWORD: devpulse
+      POSTGRES_DB: devpulse
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: local
+      DATABASE_URL: postgresql+asyncpg://devpulse:devpulse@postgres:5432/devpulse
+      SYNC_DATABASE_URL: postgresql+psycopg2://devpulse:devpulse@postgres:5432/devpulse
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: devpulse-dev-secret
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CORS_ORIGINS: http://localhost:8080
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8000:8000"
+    command: ["sh", "-lc", "export PYTHONPATH=/app && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+
+  worker:
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: local
+      DATABASE_URL: postgresql+asyncpg://devpulse:devpulse@postgres:5432/devpulse
+      SYNC_DATABASE_URL: postgresql+psycopg2://devpulse:devpulse@postgres:5432/devpulse
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: devpulse-dev-secret
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      - backend
+      - redis
+    command: ["celery", "-A", "app.workers.tasks.celery_app", "worker", "--loglevel=INFO"]
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
