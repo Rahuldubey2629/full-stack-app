@@ -38,6 +38,14 @@ stages:
             inputs:
               sourceFolder: '$(Build.SourcesDirectory)'
               contents: '**'
+              excludePatterns: |
+                .git
+                .gitignore
+                node_modules/**
+                .venv/**
+                __pycache__/**
+                *.pyc
+                .env
               targetFolder: '$(Build.ArtifactStagingDirectory)'
             displayName: 'Copy Files to Staging'
 
