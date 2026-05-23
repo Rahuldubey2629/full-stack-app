@@ -50,7 +50,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_region: ${{ secrets.AWS_REGION }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -84,12 +84,13 @@ jobs:
     - name: Build Frontend
       working-directory: ./devpulse/frontend
       run: npm run build
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_region: ${{ secrets.AWS_REGION }}
+        aws-region: ${{ secrets.AWS_REGION }}
     
     - name: Login to Amazon ECR
       id: login-ecr
