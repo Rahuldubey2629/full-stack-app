@@ -1,2 +1,3 @@
 # Optional: keep DevPulse-specific ignores here.
 # Root .gitignore already covers typical artifacts.
+devpulse/.env

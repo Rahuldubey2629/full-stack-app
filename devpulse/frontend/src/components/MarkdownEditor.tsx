@@ -11,22 +11,19 @@ export default function MarkdownEditor({
   onChange?: (next: string) => void
   readOnly?: boolean
 }) {
-  const [mode, setMode] = React.useState<'edit' | 'preview'>(readOnly ? 'preview' : 'edit')
+  const [mode, setMode] = React.useState<'markdown' | 'preview'>('preview')
 
   return (
     <div className="w-full rounded border border-gray-200 bg-white">
       <div className="flex items-center justify-between border-b border-gray-200 px-3 py-2">
-        <div className="text-sm font-medium">Markdown</div>
         <div className="flex gap-2">
-          {!readOnly && (
-            <button
-              className={`rounded px-2 py-1 text-sm ${mode === 'edit' ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}
-              onClick={() => setMode('edit')}
-              type="button"
-            >
-              Edit
-            </button>
-          )}
+          <button
+            className={`rounded px-2 py-1 text-sm ${mode === 'markdown' ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}
+            onClick={() => setMode('markdown')}
+            type="button"
+          >
+            Markdown
+          </button>
           <button
             className={`rounded px-2 py-1 text-sm ${mode === 'preview' ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}
             onClick={() => setMode('preview')}
@@ -35,15 +32,24 @@ export default function MarkdownEditor({
             Preview
           </button>
         </div>
+        <div className="flex gap-2">
+          {!readOnly && <div className="text-sm text-gray-500">Edit enabled</div>}
+        </div>
       </div>
 
       <div className="p-3">
-        {mode === 'edit' && !readOnly ? (
-          <textarea
-            className="h-64 w-full resize-y rounded border border-gray-200 p-2 font-mono text-sm"
-            value={value}
-            onChange={(e) => onChange?.(e.target.value)}
-          />
+        {mode === 'markdown' ? (
+          readOnly ? (
+            <pre className="max-h-[26rem] overflow-auto whitespace-pre-wrap rounded border border-gray-200 bg-white p-2 font-mono text-sm">
+              {value || '—'}
+            </pre>
+          ) : (
+            <textarea
+              className="h-64 w-full resize-y rounded border border-gray-200 p-2 font-mono text-sm"
+              value={value}
+              onChange={(e) => onChange?.(e.target.value)}
+            />
+          )
         ) : (
           <div className="prose max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{value || '—'}</ReactMarkdown>

@@ -13,6 +13,18 @@ from app.services.llm_service import generate_retrospective
 
 settings = get_settings()
 celery_app = Celery("devpulse", broker=settings.redis_url, backend=settings.redis_url)
+celery_app.conf.broker_connection_retry_on_startup = True
+
+
+_worker_loop: asyncio.AbstractEventLoop | None = None
+
+
+def _run_async(coro):
+    global _worker_loop
+    if _worker_loop is None or _worker_loop.is_closed():
+        _worker_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(_worker_loop)
+    return _worker_loop.run_until_complete(coro)
 
 
 @celery_app.task(name="generate_retrospective")
@@ -45,7 +57,7 @@ def generate_retrospective_task(incident_id: int) -> int:
             await session.commit()
             return retro.id
 
-    return asyncio.run(_run())
+    return _run_async(_run())
 
 
 @celery_app.task(name="generate_runbook")
@@ -67,4 +79,4 @@ def generate_runbook_task(incident_id: int) -> int:
             await session.commit()
             return runbook.id
 
-    return asyncio.run(_run())
+    return _run_async(_run())
