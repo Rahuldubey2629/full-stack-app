@@ -1,0 +1,36 @@
+name: EKS Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DESTROY to confirm'
+        required: true
+
+jobs:
+  destroy-cluster:
+    name: Destroy EKS Cluster
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'DESTROY'
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_INFRA }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_INFRA }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install eksctl
+        run: |
+          curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+          sudo mv /tmp/eksctl /usr/local/bin
+
+      - name: Destroy EKS cluster
+        run: |
+          eksctl delete cluster \
+            --name devpulse-cluster \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Confirm destroyed
+        run: echo "Cluster destroyed. Cost stopped."
