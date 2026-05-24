@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devpulse-backend
+  namespace: devpulse
+  labels:
+    app: devpulse-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devpulse-backend
+  template:
+    metadata:
+      labels:
+        app: devpulse-backend
+    spec:
+      containers:
+        - name: devpulse-backend
+          image: 167535219723.dkr.ecr.ap-southeast-2.amazonaws.com/devpulse-backend:7e49cfdc26447d508acabcdf12bc92b45d89c1dc
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: "production"
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://postgres:postgres@postgres-service:5432/devpulse"
+            - name: REDIS_URL
+              value: "redis://redis-service:6379/0"
+            - name: JWT_SECRET
+              value: "change-me-in-production"
+            - name: LLM_PROVIDER
+              value: "gemini"
+            - name: GEMINI_API_KEY
+              value: "Change-me-in-production"
+            - name: SYNC_DATABASE_URL
+              value: "postgresql+psycopg2://postgres:postgres@postgres-service:5432/devpulse"
+            - name: CORS_ORIGINS
+              value: "*"
+          # Liveness Probe is the app is alive and running
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          # Readiness Probe is the app is ready to receive traffic
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
