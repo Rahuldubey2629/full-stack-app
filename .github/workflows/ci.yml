@@ -105,8 +105,8 @@ jobs:
       run: |
           docker build -t $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG ./devpulse/frontend
           docker tag $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG $ECR_REGISTRY/devpulse-frontend:latest
-          docker push $ECR_REGISTRY/devpulse-frontend:latest
           docker push $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG
+          docker push $ECR_REGISTRY/devpulse-frontend:latest
 
   deploy:
     name: Deploy to EKS
