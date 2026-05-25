@@ -48,7 +48,7 @@ spec:
           volumeMounts:
             - name: devpulse-pvc
               mountPath: /var/lib/postgresql/data/pgdata/data
-
+              
       volumes:
         - name: devpulse-pvc
           persistentVolumeClaim:
