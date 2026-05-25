@@ -13,96 +13,110 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-      name: Checkout Code
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-    - name: Install Dependencies
-      working-directory: ./devpulse/backend
-      run: |
-        pip install -r requirements.txt
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Run Tests
-      working-directory: ./devpulse/backend
-      run: |
-        pytest tests/ -v
-      env: 
-        DATABASE_URL: sqlite+aiosqlite:///./test.db
-        SYNC_DATABASE_URL: sqlite:///./test.db
-        JWT_SECRET: test-secret-for-ci-only
-        REDIS_URL: redis://localhost:6379/0
-        LLM_PROVIDER: gemini
-        GEMINI_API_KEY: fake-key-for-tests
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        working-directory: ./devpulse/backend
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Tests
+        working-directory: ./devpulse/backend
+        run: |
+          pytest tests/ -v
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          SYNC_DATABASE_URL: sqlite:///./test.db
+          JWT_SECRET: test-secret-for-ci-only
+          REDIS_URL: redis://localhost:6379/0
+          LLM_PROVIDER: gemini
+          GEMINI_API_KEY: fake-key-for-tests
 
   build-backend:
     name: Build Backend Image
     runs-on: ubuntu-latest
     needs: test-backend
     steps:
-    - uses: actions/checkout@v4 
-      name: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: Build Backend Docker Image (local)
+        run: |
+          docker build -t devpulse-backend:${{ github.sha }} ./devpulse/backend
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: Configure AWS Credentials
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build and Push Backend  Image
-      env:
-        ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG ./devpulse/backend
-        docker tag $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG $ECR_REGISTRY/devpulse-backend:latest
-        docker push $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG
-        docker push $ECR_REGISTRY/devpulse-backend:latest
+      - name: Build and Push Backend Image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG ./devpulse/backend
+          docker tag $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG $ECR_REGISTRY/devpulse-backend:latest
+          docker push $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG
+          docker push $ECR_REGISTRY/devpulse-backend:latest
   
   build-frontend:
     name: Build Frontend Image
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      name: Checkout Code
-    
-    - name: Setup Node
-      uses: actions/setup-node@v5
-      with: 
-        node-version: "20"
-    
-    - name : Install Dependencies
-      working-directory: ./devpulse/frontend
-      run: npm ci
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Build Frontend
-      working-directory: ./devpulse/frontend
-      run: npm run build
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
-    
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: Install Dependencies
+        working-directory: ./devpulse/frontend
+        run: npm ci
 
-    - name: Build Frontend and Push Image
-      env: 
-        ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
+      - name: Build Frontend
+        working-directory: ./devpulse/frontend
+        run: npm run build
+
+      - name: Build Frontend Docker Image (local)
+        run: |
+          docker build -t devpulse-frontend:${{ github.sha }} ./devpulse/frontend
+
+      - name: Configure AWS Credentials
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Frontend and Push Image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
           docker build -t $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG ./devpulse/frontend
           docker tag $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG $ECR_REGISTRY/devpulse-frontend:latest
           docker push $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG
@@ -112,7 +126,7 @@ jobs:
     name: Deploy to EKS
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
     - uses: actions/checkout@v4
@@ -152,9 +166,17 @@ jobs:
         kubectl apply -f k8s/namespace.yaml
         kubectl apply -f k8s/postgres/
         kubectl apply -f k8s/redis/
-        kubectl apply -f k8s/backend/
-        kubectl apply -f k8s/worker/
-        kubectl apply -f k8s/frontend/
+          kubectl -n devpulse rollout status deployment/postgres --timeout=300s
+
+          kubectl -n devpulse delete job devpulse-migrate --ignore-not-found
+          kubectl apply -f k8s/backend/migrate-job.yaml
+          kubectl -n devpulse wait --for=condition=complete job/devpulse-migrate --timeout=300s
+          kubectl -n devpulse logs job/devpulse-migrate
+
+          kubectl apply -f k8s/backend/service.yaml
+          kubectl apply -f k8s/backend/deployment.yaml
+          kubectl apply -f k8s/worker/
+          kubectl apply -f k8s/frontend/
 
     - name: Update the image tags
       if: steps.check-cluster.outputs.cluster_exists == 'true'
