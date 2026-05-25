@@ -22,7 +22,8 @@ spec:
     spec:
       containers:
         - name: devpulse-frontend
-          image: 167535219723.dkr.ecr.ap-southeast-2.amazonaws.com/devpulse-frontend:v3
+          image: 167535219723.dkr.ecr.ap-southeast-2.amazonaws.com/devpulse-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           resources:

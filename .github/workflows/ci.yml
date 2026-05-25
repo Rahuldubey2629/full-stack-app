@@ -64,6 +64,7 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG ./devpulse/backend
         docker tag $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG $ECR_REGISTRY/devpulse-backend:latest
+        docker push $ECR_REGISTRY/devpulse-backend:$IMAGE_TAG
         docker push $ECR_REGISTRY/devpulse-backend:latest
   
   build-frontend:
@@ -103,7 +104,91 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
       run: |
           docker build -t $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG ./devpulse/frontend
-          docker tag $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG $ECR_REGISTRY/devpulse-backend:latest
+          docker tag $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG $ECR_REGISTRY/devpulse-frontend:latest
+          docker push $ECR_REGISTRY/devpulse-frontend:latest
           docker push $ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG
 
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    if: github.ref == 'refs/heads/main'
 
+    steps:
+    - uses: actions/checkout@v4
+      name: Checkout Code
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_INFRA }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_INFRA }}
+        aws-region: ${{ secrets.AWS_REGION }}
+    - name: Install kubectl
+      run: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        mv kubectl /usr/local/bin/
+
+    - name: Check if EKS cluster exists
+      id: check-cluster
+      run: |
+        if aws eks describe-cluster \
+            --name devpulse-cluster \
+            --region ${{ secrets.AWS_REGION }} \
+            --query 'cluster.status' 2>/dev/null; then
+            echo "cluster_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "cluster_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+    - name: Update kubeconfig
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
+      run: |
+        aws eks update-kubeconfig --name devpulse-cluster --region ${{ secrets.AWS_REGION }}
+    
+    - name: Apply k8s manifests
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
+      run: |
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/postgres/
+        kubectl apply -f k8s/redis/
+        kubectl apply -f k8s/backend/
+        kubectl apply -f k8s/worker/
+        kubectl apply -f k8s/frontend/
+
+    - name: Update the image tags
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
+      env:
+        ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        kubectl set image deployment/devpulse-backend \
+            devpulse-backend=$ECR_REGISTRY/devpulse-backend:$IMAGE_TAG \
+            -n devpulse
+        kubectl set image deployment/devpulse-worker \
+            devpulse-worker=$ECR_REGISTRY/devpulse-backend:$IMAGE_TAG \
+            -n devpulse
+        kubectl set image deployment/devpulse-frontend \
+            devpulse-frontend=$ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG \
+            -n devpulse
+
+    - name: wait for rollout to complete
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
+      run: |
+        kubectl rollout status deployment/devpulse-backend -n devpulse --timeout=300s
+        kubectl rollout status deployment/devpulse-worker -n devpulse   --timeout=300s
+        kubectl rollout status deployment/devpulse-frontend -n devpulse --timeout=300s
+    
+    - name: Verify Pods are Running
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
+      run: |
+        kubectl get pods -n devpulse
+        kubectl get services -n devpulse
+      
+    - name: Skip Deployment - no cluster
+      if: steps.check-cluster.outputs.cluster_exists == 'false'
+      run: |
+        echo "EKS cluster does not exist. Skipping deployment."
+        echo "Start cluster with eks-startup workflow first."
+
+        
