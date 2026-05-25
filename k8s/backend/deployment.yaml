@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: devpulse-backend
-          image: 167535219723.dkr.ecr.ap-southeast-2.amazonaws.com/devpulse-backend:7e49cfdc26447d508acabcdf12bc92b45d89c1dc
+          image: 167535219723.dkr.ecr.ap-southeast-2.amazonaws.com/devpulse-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
