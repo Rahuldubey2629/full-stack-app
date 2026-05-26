@@ -6,7 +6,7 @@ metadata:
   labels:
     app: devpulse-migrate
 spec:
-  backoffLimit: 1
+  backoffLimit: 3
   template:
     metadata:
       labels:
@@ -34,3 +34,35 @@ spec:
               value: "redis://redis-service:6379/0"
             - name: JWT_SECRET
               value: "change-me-in-production"
+            - name: LLM_PROVIDER
+              value: "gemini"
+            - name: GEMINI_API_KEY
+              value: "your-gemini-api-key"
+            # - name: GOOGLE_API_KEY
+            #   value: "your-google-api-key"
+            # - name: GROQ_API_KEY
+            #   value: "your-groq-api-key"
+            # - name: GROQ_MODEL
+            #   value: "your-groq-model"
+            # - name: GROQ_BASE_URL
+            #   value: "your-groq-base-url"
+            # - name: AZURE_AI_ENDPOINT
+            #   value: "your-azure-ai-endpoint"
+            # - name: AZURE_AI_API_KEY
+            #   value: "your-azure-ai-api-key"
+            # - name: AZURE_AI_MODEL
+            #   value: "your-azure-ai-model"
+            # - name: AZURE_AI_API_VERSION
+            #   value: "your-azure-ai-api-version"
+            # - name: AZURE_AI_CHAT_PATH
+            #   value: "your-azure-ai-chat-path"
+            # - name: AZURE_OPENAI_ENDPOINT
+            #   value: "your-azure-openai-endpoint"
+            # - name: AZURE_OPENAI_API_KEY
+            #   value: "your-azure-openai-api-key"
+            # - name: AZURE_OPENAI_DEPLOYMENT
+            #   value: "your-azure-openai-deployment"
+            # - name: AZURE_OPENAI_API_VERSION
+            #   value: "your-azure-openai-api-version"   
+            - name: CORS_ORIGINS
+              value: "*"
