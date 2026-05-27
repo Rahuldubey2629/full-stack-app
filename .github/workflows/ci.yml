@@ -177,6 +177,7 @@ jobs:
         kubectl apply -f k8s/backend/deployment.yaml
         kubectl apply -f k8s/worker/
         kubectl apply -f k8s/frontend/
+        kubectl apply -f k8s/ingress.yml
 
     - name: Update the image tags
       if: steps.check-cluster.outputs.cluster_exists == 'true'
