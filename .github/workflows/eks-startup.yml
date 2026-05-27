@@ -30,7 +30,50 @@ jobs:
           curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
           sudo mv /tmp/eksctl /usr/local/bin
 
+      - name: Preflight (cluster/stack)
+        id: preflight
+        env:
+          CLUSTER_NAME: devpulse-cluster
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          set -euo pipefail
+
+          # eksctl uses CloudFormation stacks; if a previous run failed, the stack can remain
+          # and block future creates with AlreadyExistsException.
+          STACK_NAME="eksctl-${CLUSTER_NAME}-cluster"
+
+          if aws eks describe-cluster --name "${CLUSTER_NAME}" --region "${AWS_REGION}" >/dev/null 2>&1; then
+            echo "cluster_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cluster_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if aws cloudformation describe-stacks --stack-name "${STACK_NAME}" --region "${AWS_REGION}" >/dev/null 2>&1; then
+            status=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" --region "${AWS_REGION}" --query 'Stacks[0].StackStatus' --output text)
+            echo "stack_exists=true" >> "$GITHUB_OUTPUT"
+            echo "stack_status=${status}" >> "$GITHUB_OUTPUT"
+            echo "Found CloudFormation stack ${STACK_NAME} (${status})"
+          else
+            echo "stack_exists=false" >> "$GITHUB_OUTPUT"
+            echo "stack_status=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cleanup leftover CloudFormation stack
+        if: steps.preflight.outputs.cluster_exists == 'false' && steps.preflight.outputs.stack_exists == 'true'
+        env:
+          CLUSTER_NAME: devpulse-cluster
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          STACK_NAME="eksctl-${CLUSTER_NAME}-cluster"
+
+          echo "Deleting leftover CloudFormation stack ${STACK_NAME}"
+          aws cloudformation delete-stack --stack-name "${STACK_NAME}" --region "${AWS_REGION}"
+          aws cloudformation wait stack-delete-complete --stack-name "${STACK_NAME}" --region "${AWS_REGION}"
+          echo "Stack deleted. Proceeding with cluster create."
+
       - name: Create EKS cluster
+        if: steps.preflight.outputs.cluster_exists == 'false'
         run: |
           eksctl create cluster \
             --name devpulse-cluster \
@@ -39,12 +82,23 @@ jobs:
             --node-type ${{ github.event.inputs.node_type }} \
             --managed
 
+      - name: Skip create (cluster already exists)
+        if: steps.preflight.outputs.cluster_exists == 'true'
+        run: echo "Cluster devpulse-cluster already exists; skipping create."
+
       - name: Install EBS CSI Driver
         run: |
-          eksctl create addon \
-            --name aws-ebs-csi-driver \
-            --cluster devpulse-cluster \
-            --region ${{ secrets.AWS_REGION }}
+          set -euo pipefail
+
+          # Idempotent addon creation: create only if it doesn't already exist.
+          if aws eks describe-addon --cluster-name devpulse-cluster --addon-name aws-ebs-csi-driver --region ${{ secrets.AWS_REGION }} >/dev/null 2>&1; then
+            echo "EBS CSI addon already installed; skipping."
+          else
+            eksctl create addon \
+              --name aws-ebs-csi-driver \
+              --cluster devpulse-cluster \
+              --region ${{ secrets.AWS_REGION }}
+          fi
 
       - name: Install kubectl
         run: |
@@ -65,9 +119,10 @@ jobs:
             --cluster-name devpulse-cluster \
             --addon-name aws-ebs-csi-driver \
             --region ${{ secrets.AWS_REGION }}
+
           kubectl wait \
-          --for=condition=Ready nodes \
-          --all \
-          --timeout=300s
+            --for=condition=Ready nodes \
+            --all \
+            --timeout=300s
 
           kubectl get nodes -o wide
