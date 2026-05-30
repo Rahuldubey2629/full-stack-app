@@ -14,6 +14,6 @@ terraform {
     region       = "ap-southeast-2"
     use_lockfile = true
     encrypt      = true
-    profile      = "devpulse-infra"
+    # profile      = "devpulse-infra"
   }
 }
