@@ -6,7 +6,7 @@ metadata:
   annotations:
     # nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false" # Set to "true" if you have TLS configured
-    nginx.ingress.kubernetes.io/ingress.class: "nginx"
+    # nginx.ingress.kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/proxy-body-size: "10m" # Adjust as needed for file uploads
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300" # Adjust as needed for long-running requests
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300" # Adjust as needed for long-running requests
