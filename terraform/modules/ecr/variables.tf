@@ -1,7 +1,7 @@
 variable "repository_names" {
   description = "List of ECR repository names to create."
   type        = list(string)
-  default     = ["devpulse-backend", "devpulse-frontend", "devpulse-worker"]
+  default     = ["devpulse-backend", "devpulse-frontend"]
 }
 
 variable "image_tag_mutability" {
