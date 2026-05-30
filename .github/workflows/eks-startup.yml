@@ -99,7 +99,14 @@ jobs:
               --cluster devpulse-cluster \
               --region ${{ secrets.AWS_REGION }}
           fi
-
+      - name: Attach EBS CSI IAM policy to node role
+        run: |
+          NODE_ROLE=$(aws iam list-roles \
+            --query 'Roles[?contains(RoleName, `NodeInstanceRole`)].RoleName' \
+            --output text)
+          aws iam attach-role-policy \
+            --role-name $NODE_ROLE \
+            --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
       - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
