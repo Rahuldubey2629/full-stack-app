@@ -79,5 +79,5 @@ variable "single_nat_gateway" {
 variable "ecr_repository_names" {
   description = "List of ECR repository names to create."
   type        = list(string)
-  default     = ["devpulse-backend-tf", "devpulse-frontend-tf"]
+  default     = ["devpulse-backend", "devpulse-frontend"]
 }
