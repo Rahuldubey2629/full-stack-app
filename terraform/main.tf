@@ -1,10 +1,3 @@
-locals {
-  tags = {
-    Project     = "devpulse"
-    Environment = var.environment
-  }
-}
-
 module "vpc" {
   source = "./modules/vpc"
 
