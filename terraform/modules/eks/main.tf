@@ -22,12 +22,14 @@ resource "aws_security_group" "cluster" {
 
 resource "aws_eks_cluster" "this" {
   name     = var.cluster_name
-  version  = "1.34"
+  version  = var.cluster_version
   role_arn = var.cluster_role_arn
 
   vpc_config {
     subnet_ids         = var.subnet_ids
     security_group_ids = [aws_security_group.cluster.id]
+    endpoint_private_access = true
+    endpoint_public_access  = true
   }
 
   tags = local.tags
@@ -104,12 +106,14 @@ resource "aws_eks_addon" "coredns" {
   cluster_name = aws_eks_cluster.this.name
   addon_name   = "coredns"
   tags         = local.tags
+  depends_on = [aws_eks_node_group.this]
 }
 
 resource "aws_eks_addon" "kube_proxy" {
   cluster_name = aws_eks_cluster.this.name
   addon_name   = "kube-proxy"
   tags         = local.tags
+  depends_on = [aws_eks_node_group.this]
 }
 
 resource "aws_eks_addon" "ebs_csi" {

@@ -16,6 +16,12 @@ variable "cluster_name" {
   default     = "devpulse-cluster"
 }
 
+variable "cluster_version" {
+  description = "Kubernetes version for the EKS cluster."
+  type        = string
+  default     = "1.34"
+}
+
 variable "environment" {
   description = "Environment tag value."
   type        = string
