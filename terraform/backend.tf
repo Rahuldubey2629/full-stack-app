@@ -7,6 +7,6 @@ terraform {
     region       = "ap-southeast-2"
     use_lockfile = true
     encrypt      = true
-
+    # profile      = "devpulse-infra" # optional if you have multiple AWS profiles configured
   }
 }
