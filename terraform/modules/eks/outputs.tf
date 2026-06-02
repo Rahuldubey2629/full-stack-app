@@ -22,3 +22,13 @@ output "node_group_arn" {
   description = "Node group ARN."
   value       = aws_eks_node_group.this.arn
 }
+
+output "oidc_provider_arn" {
+  description = "OIDC provider ARN for the cluster."
+  value       = aws_iam_openid_connect_provider.this.arn
+}
+
+output "ebs_csi_role_arn" {
+  description = "IAM role ARN used by the EBS CSI driver."
+  value       = aws_iam_role.ebs_csi.arn
+}

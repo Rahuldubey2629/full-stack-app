@@ -7,7 +7,7 @@ metadata:
   labels:
     app: devpulse-pvc
 spec:
-  storageClassName: gp2
+  storageClassName: gp3
   accessModes:
     - ReadWriteOnce
   resources:  
