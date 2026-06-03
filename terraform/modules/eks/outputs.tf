@@ -32,3 +32,13 @@ output "ebs_csi_role_arn" {
   description = "IAM role ARN used by the EBS CSI driver."
   value       = aws_iam_role.ebs_csi.arn
 }
+
+output "cluster_ca"{
+  description = "Base64 encoded certificate authority data for the cluster."
+  value       = aws_eks_cluster.this.certificate_authority[0].data
+}
+
+output "oidc_provider_url" {
+  description = "OIDC provider URL for the cluster."
+  value       = aws_iam_openid_connect_provider.this.url
+}
