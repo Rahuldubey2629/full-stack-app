@@ -42,3 +42,9 @@ output "eks_node_role_arn" {
   description = "IAM role ARN for EKS worker nodes."
   value       = module.iam.node_role_arn
 }
+
+
+output "configure_kubectl_command" {
+  description = "Command to configure kubectl for the EKS cluster."
+  value       = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.aws_region}"
+}
