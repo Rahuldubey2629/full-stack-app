@@ -11,6 +11,7 @@ jobs:
   terraform:
     name: Terraform Destroy
     runs-on: ubuntu-latest
+    # if : github.event.inputs.confirm == 'DESTROY'
     defaults:
       run:
         working-directory: terraform
