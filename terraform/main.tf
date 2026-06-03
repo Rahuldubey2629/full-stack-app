@@ -11,6 +11,14 @@ module "vpc" {
   tags               = local.tags
 }
 
+module "iam" {
+  source = "./modules/iam"
+
+  cluster_name = var.cluster_name
+  environment  = var.environment
+  tags         = local.tags
+}
+
 module "eks" {
   source = "./modules/eks"
 
@@ -24,14 +32,6 @@ module "eks" {
   node_count         = var.node_count
   environment        = var.environment
   tags               = local.tags
-}
-
-module "iam" {
-  source = "./modules/iam"
-
-  cluster_name = var.cluster_name
-  environment  = var.environment
-  tags         = local.tags
 }
 
 module "ecr" {
