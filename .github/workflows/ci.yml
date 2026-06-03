@@ -170,6 +170,7 @@ jobs:
           --timeout=300s
 
     - name: Verify Ingress Controller
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
       run: |
         kubectl get pods -n ingress-nginx
         kubectl get svc -n ingress-nginx
@@ -191,7 +192,7 @@ jobs:
         kubectl apply -f k8s/backend/deployment.yaml
         kubectl apply -f k8s/worker/
         kubectl apply -f k8s/frontend/
-        kubectl apply -f k8s/ingress.yml
+        kubectl apply -f k8s/ingress.yaml
 
     - name: Update the image tags
       if: steps.check-cluster.outputs.cluster_exists == 'true'
