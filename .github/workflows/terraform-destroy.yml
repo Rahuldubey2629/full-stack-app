@@ -2,6 +2,10 @@ name: Terraform Destroy
 
 on:
   workflow_dispatch:
+    # inputs:
+    #   confirm: 
+    #     description: 'Type "DESTROY" to confirm'
+    #     required: true
 
 jobs:
   terraform:
