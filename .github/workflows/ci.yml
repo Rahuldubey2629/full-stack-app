@@ -160,6 +160,19 @@ jobs:
       if: steps.check-cluster.outputs.cluster_exists == 'true'
       run: |
         aws eks update-kubeconfig --name devpulse-cluster --region ${{ secrets.AWS_REGION }}
+
+    - name: Install NGINX Ingress Controller
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
+      run: |
+        kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.0/deploy/static/provider/aws/deploy.yaml
+        kubectl wait --namespace ingress-nginx \
+          --for=condition=ready pod --selector=app.kubernetes.io/component=controller \
+          --timeout=300s
+
+    - name: Verify Ingress Controller
+      run: |
+        kubectl get pods -n ingress-nginx
+        kubectl get svc -n ingress-nginx
     
     - name: Apply k8s manifests
       if: steps.check-cluster.outputs.cluster_exists == 'true'
