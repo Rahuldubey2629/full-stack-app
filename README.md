@@ -17,3 +17,17 @@ Open:
 ## Project docs
 
 - DevPulse details: [devpulse/README.md](devpulse/README.md)
+
+## Update the k8s context
+export AWS_PROFILE=devpulse-infra
+
+aws sts get-caller-identity
+
+ aws eks update-kubeconfig \
+  --region ap-southeast-2 \
+  --name devpulse-cluster \
+  --profile devpulse-infra
+
+kubectl config current-context
+kubectl get nodes
+
