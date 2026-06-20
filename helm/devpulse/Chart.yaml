@@ -1,0 +1,18 @@
+apiVersoin: v2   # Helm 3 uses v2
+
+name: devpulse  # Chart name used in helm install command  ./helm/devpulse
+description: DevPulse AI Incident retrospective and runbook generator
+type: application  # application = deploys an app 
+
+version: 0.1.0   # Sematic versioning: major.minor.patch
+appVersion: "1.0.0"  # Version of the application 
+keywords:
+  - devpulse
+  - ai
+  - incident-management
+  - llm
+
+maintainers:
+  - name: DevPulse Team
+    email: rahuldubey2662@gmail.com
+

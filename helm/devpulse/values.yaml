@@ -1,0 +1,118 @@
+# Registry and image config
+registry: 167535219723.dkr.ecr.ap-southeast-2.amazonaws.com
+# Namespace 
+namespace: devpulse
+
+# Backend Config 
+backend: 
+  image: devpulse-backend
+  tag: latest
+  replicas: 2
+  port: 8000
+  resources:
+    requests:
+      memory: 256Mi
+      cpu:  250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    cpuTargetPercent: 70
+  
+# Worker Config
+worker:
+  image: devpulse-backend
+  tag: latest
+  replicas: 2
+  resources:
+    requests:   
+      memory: 250Mi
+      cpu:  250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    cpuTargetPercent: 70
+
+# Frontend Config
+frontend: 
+  image: devpulse-frontend
+  tag: latest
+  replicas: 2
+  port: 80
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+
+# Redis Config
+
+redis:
+  image: redis
+  tag: 7-alpine
+  replicas: 1
+  port: 6379
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 128Mi
+      cpu: 100m
+
+# Postgres Config
+
+postgres:
+  image: postgres
+  tag: "15"
+  replicas: 1
+  port: 5432
+  database: devpulse
+  storage: 1Gi
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+
+# Secrets (override in values-production.yaml)
+secrets:
+  jwtSecret: change-me-in-production
+  azureOpenAIKey: ""
+  azureOpenAIEndpoint: ""
+  dbPassword: postgres
+  dbUser: postgres
+
+# Ingress Config
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+
+# App envirement variables
+app: 
+  env: production
+  corsOrigins: "*"
+  llmProvider: azure_openai
+  jwtAlgorithm: HS256
+  jwtAccessMinutes: 30
+  jwtRefreshDays: 1440
+  azureOpenAIModel: gpt-4o-mini
+  azureOpenAIVersion: 2024-12-01-preview
+  azureOpenAIDeployment: o4-mini
+
