@@ -1,6 +1,6 @@
 # full-stack-app
 
-This repo contains **DevPulse**, an AI-powered incident retrospective and runbook generator.
+This repo contains **DevPulse**, an AI-powered incident retrospective and runbook generator. 
 
 ## Quick start (local)
 
