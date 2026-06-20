@@ -1,0 +1,21 @@
+# Prod overides for DevPulse Helm chart
+# Only values that are different from the default values.yaml 
+
+backend:
+  replicas: 3
+  hpa:
+    minReplicas: 3
+    maxReplicas: 10
+
+worker:
+  replicas: 3
+  hpa:
+    minReplicas: 3
+    maxReplicas: 10
+
+frontend:
+  replicas: 3
+
+ingress:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"

@@ -1,4 +1,4 @@
-apiVersoin: v2   # Helm 3 uses v2
+apiVersion: v2   # Helm 3 uses v2
 
 name: devpulse  # Chart name used in helm install command  ./helm/devpulse
 description: DevPulse AI Incident retrospective and runbook generator
