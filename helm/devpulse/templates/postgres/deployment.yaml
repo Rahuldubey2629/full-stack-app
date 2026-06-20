@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: devpulse
+  namespace: {{ .Values.namespace }}
   labels:
     app: postgres
 spec:
-  replicas: 1
+  replicas: {{ .Values.postgres.replicas }}
   selector:
     matchLabels:  
       app: postgres
@@ -17,9 +17,9 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:15-alpine
+          image: {{ .Values.postgres.image }}:{{ .Values.postgres.tag }}
           ports:
-            - containerPort: 5432
+            - containerPort: {{ .Values.postgres.port }}
           env:
             - name: POSTGRES_USER
               valueFrom:
@@ -37,14 +37,14 @@ spec:
                   name: postgres-secret
                   key: POSTGRES_DB
             - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata/db
+              value: /var/lib/postgresql/data/pgdata
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: {{ .Values.postgres.resources.requests.memory  }}
+              cpu: {{ .Values.postgres.resources.requests.cpu  }}
             limits:
-              memory: "256Mi"
-              cpu: "200m" 
+              memory: {{ .Values.postgres.resources.limits.memory  }}
+              cpu: {{ .Values.postgres.resources.limits.cpu  }} 
           volumeMounts:
             - name: devpulse-pvc
               mountPath: /var/lib/postgresql/data/pgdata/data
