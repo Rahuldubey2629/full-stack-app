@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: devpulse-frontend
-  namespace: devpulse
+  namespace: {{ .Values.namespace }}
   labels:
     app: devpulse-frontend
 spec:
-  replicas: 2
+  replicas: {{ .Values.frontend.replicas }}
   strategy:          
     type: RollingUpdate
     rollingUpdate:
@@ -22,28 +22,28 @@ spec:
     spec:
       containers:
         - name: devpulse-frontend
-          image: 167535219723.dkr.ecr.ap-southeast-2.amazonaws.com/devpulse-frontend:latest
+          image: {{ .Values.registry }}/{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}
           imagePullPolicy: Always
           ports:
-            - containerPort: 80
+            - containerPort: {{ .Values.frontend.port }}
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: {{ .Values.frontend.resources.requests.memory }}
+              cpu: {{ .Values.frontend.resources.requests.cpu }}
             limits:
-              memory: "256Mi"
-              cpu: "200m"
+              memory: {{ .Values.frontend.resources.limits.memory }}
+              cpu: {{ .Values.frontend.resources.limits.cpu }}
           livenessProbe:
             httpGet:
               path: /
-              port: 80
+              port: {{ .Values.frontend.port }}
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 5
           readinessProbe:
             httpGet:  
               path: /
-              port: 80
+              port: {{ .Values.frontend.port }}
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 3

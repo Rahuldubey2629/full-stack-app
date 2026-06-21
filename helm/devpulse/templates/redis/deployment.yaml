@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: devpulse
+  namespace: {{ .Values.namespace }}
   labels:
     app: redis
 spec:
-  replicas: 1
+  replicas: {{ .Values.redis.replica }}
   selector:
     matchLabels:
       app: redis
@@ -17,13 +17,13 @@ spec:
     spec:   
       containers:
         - name: redis
-          image: redis:7-alpine
+          image: {{ .Values.redis.image}}:{{ .Values.redis.tag }}
           ports:
-            - containerPort: 6379
+            - containerPort: {{ .Values.redis.port }}
           resources:
             requests:
-              memory: "64Mi"
-              cpu: "50m"
+              memory: {{ .Values.redis.resources.requests.memory }}
+              cpu: {{ .Values.redis.resources.requests.cpu }}
             limits:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: {{ .Values.redis.resources.limits.memory }}
+              cpu: {{ .Values.redis.resources.limits.cpu }}
