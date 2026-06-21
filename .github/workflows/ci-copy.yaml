@@ -1,13 +1,6 @@
 
 name: DevPulse CI/CD
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-
 jobs:
   test-backend:
     name: Run Backend Tests
@@ -147,17 +140,14 @@ jobs:
     - name: Check if EKS cluster exists
       id: check-cluster
       run: |
-        STATUS=$(aws eks describe-cluster \
-          --name devpulse-cluster \
-          --region ${{ secrets.AWS_REGION }} \
-          --query 'cluster.status' \
-          --output text 2>/dev/null || echo "NOT_FOUND")
-        echo "Cluster status: $STATUS"
-        if [ "$STATUS" = "ACTIVE" ]; then
-          echo "cluster_exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "cluster_exists=false" >> $GITHUB_OUTPUT
-        fi
+        if aws eks describe-cluster \
+            --name devpulse-cluster \
+            --region ${{ secrets.AWS_REGION }} \
+            --query 'cluster.status' 2>/dev/null; then
+            echo "cluster_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "cluster_exists=false" >> $GITHUB_OUTPUT
+          fi
 
     - name: Update kubeconfig
       if: steps.check-cluster.outputs.cluster_exists == 'true'
@@ -184,29 +174,60 @@ jobs:
         kubectl get svc -n ingress-nginx
 
 
-    - name: Deploy Helm Chart
+  
+          
+    # This were the original deployment steps, but they are commented out for now. And keeping them here for reference.
+    # Now we will update this to use with Helm chart deployment instead of kubectl apply.
+
+    - name: Apply k8s manifests
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
+      run: |
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/postgres/
+        kubectl apply -f k8s/redis/
+        kubectl -n devpulse rollout status deployment/postgres --timeout=300s
+
+        kubectl -n devpulse delete job devpulse-migrate --ignore-not-found
+        kubectl apply -f k8s/backend/migrate-job.yaml
+        kubectl -n devpulse wait --for=condition=complete job/devpulse-migrate --timeout=300s
+        kubectl -n devpulse logs job/devpulse-migrate
+
+        kubectl apply -f k8s/backend/service.yaml
+        kubectl apply -f k8s/backend/deployment.yaml
+        kubectl apply -f k8s/worker/
+        kubectl apply -f k8s/frontend/
+        kubectl apply -f k8s/ingress.yaml
+
+    - name: Update the image tags
       if: steps.check-cluster.outputs.cluster_exists == 'true'
       env:
         ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        helm upgrade --install devpulse ./helm/devpulse \
-          --namespace devpulse \
-          --create-namespace \
-          --set backend.tag=${{ github.sha }} \
-          --set frontend.tag=${{ github.sha }} \
-          --set secrets.azureOpenAIKey=${{ secrets.AZURE_OPENAI_KEY }} \
-          --set secrets.azureOpenAIEndpoint=${{ secrets.AZURE_OPENAI_ENDPOINT }} \
-          --set secrets.jwtSecret=${{ secrets.JWT_SECRET }} \
-          --set secrets.dbPassword=${{ secrets.DB_PASSWORD }} \
-          --wait --timeout 10m
+        kubectl set image deployment/devpulse-backend \
+            devpulse-backend=$ECR_REGISTRY/devpulse-backend:$IMAGE_TAG \
+            -n devpulse
+        kubectl set image deployment/devpulse-worker \
+            devpulse-worker=$ECR_REGISTRY/devpulse-backend:$IMAGE_TAG \
+            -n devpulse
+        kubectl set image deployment/devpulse-frontend \
+            devpulse-frontend=$ECR_REGISTRY/devpulse-frontend:$IMAGE_TAG \
+            -n devpulse
+
+    - name: wait for rollout to complete
+      if: steps.check-cluster.outputs.cluster_exists == 'true'
+      run: |
+        kubectl rollout status deployment/devpulse-backend -n devpulse --timeout=300s
+        kubectl rollout status deployment/devpulse-worker -n devpulse   --timeout=300s
+        kubectl rollout status deployment/devpulse-frontend -n devpulse --timeout=300s
     
-    - name: Verify the Deployment
+    - name: Verify Pods are Running
       if: steps.check-cluster.outputs.cluster_exists == 'true'
       run: |
         kubectl get pods -n devpulse
         kubectl get services -n devpulse
-        helm list -n devpulse
+      
+
 
     - name: Skip Deployment - no cluster
       if: steps.check-cluster.outputs.cluster_exists == 'false'
