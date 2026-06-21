@@ -1,5 +1,5 @@
 
-name: DevPulse CI/CD
+name: Old CI/CD
 on:
     push:
         branches: [ "test-branch" ]
