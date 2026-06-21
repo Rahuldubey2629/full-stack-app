@@ -1,6 +1,8 @@
 
 name: DevPulse CI/CD
-
+on:
+    push:
+        branches: [ "test-branch" ]
 jobs:
   test-backend:
     name: Run Backend Tests
