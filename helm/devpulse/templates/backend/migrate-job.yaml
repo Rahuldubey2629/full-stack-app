@@ -16,7 +16,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: 167535219723.dkr.ecr.ap-southeast-2.amazonaws.com/devpulse-backend:latest
+          image: {{ .Values.registry }}/{{ .Values.backend.image }}:{{ .Values.backend.tag }}
           imagePullPolicy: Always
           workingDir: /app
           command: ["sh", "-lc"]
@@ -28,17 +28,25 @@ spec:
             - name: APP_ENV
               value: "production"
             - name: DATABASE_URL
-              value: "postgresql+asyncpg://postgres:postgres@postgres-service:5432/devpulse"
-            - name: SYNC_DATABASE_URL
-              value: "postgresql+psycopg2://postgres:postgres@postgres-service:5432/devpulse"
+              value: "postgresql+asyncpg://{{ .Values.secrets.dbUser }}:{{ .Values.secrets.dbPassword }}@postgres-service:{{ .Values.postgres.port }}/{{ .Values.secrets.dbName }}"
             - name: REDIS_URL
-              value: "redis://redis-service:6379/0"
+              value: "redis://redis-service:{{ .Values.redis.port }}/0"
             - name: JWT_SECRET
-              value: "change-me-in-production"
+              value: {{ .Values.secrets.jwtSecret | quote }}
             - name: LLM_PROVIDER
-              value: "gemini"
-            - name: GEMINI_API_KEY
-              value: "your-gemini-api-key"
+              value: {{ .Values.app.llmProvider | quote }}
+            - name: AzURE_OPENAI_API_KEY
+              value: {{ .Values.secrets.azureOpenAIKey | quote }}
+            - name: AZURE_OPENAI_ENDPOINT
+              value: {{ .Values.secrets.azureOpenAIEndpoint | quote }}
+            - name: AZURE_OPENAI_DEPLOYMENT_NAME
+              value: {{ .Values.secrets.azureOpenAIDeploymentName | quote }}
+            - name: AZURE_OPENAI_API_VERSION
+              value: {{ .Values.secrets.azureOpenAIAPIVersion | quote }}
+            - name: AZURE_OPENAI_MODEL
+              value: {{ .Values.secrets.azureOpenAIModel | quote }}
+            - name: SYNC_DATABASE_URL
+              value: "postgresql+psycopg2://{{ .Values.secrets.dbUser }}:{{ .Values.secrets.dbPassword }}@postgres-service:{{ .Values.postgres.port }}/{{ .Values.secrets.dbName }}"
             # - name: GOOGLE_API_KEY
             #   value: "your-google-api-key"
             # - name: GROQ_API_KEY
