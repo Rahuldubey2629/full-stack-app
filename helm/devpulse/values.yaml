@@ -9,6 +9,7 @@ backend:
   tag: latest
   replicas: 2
   port: 8000
+  servicePort: 80
   resources:
     requests:
       memory: 256Mi
